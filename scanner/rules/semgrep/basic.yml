@@ -1,0 +1,285 @@
+rules:
+  - id: py.rce.eval-exec.user-input
+    languages: [python]
+    severity: ERROR
+    message: "eval или exec над явно недоверенным вводом: риск выполнения произвольного кода."
+    metadata:
+      category: security
+      technology: [python]
+      cwe: ["CWE-94"]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+    paths:
+      exclude:
+        - "setup.py"
+        - "**/setup.py"
+        - "setup.cfg"
+        - "**/setup.cfg"
+        - "pyproject.toml"
+        - "**/pyproject.toml"
+        - "**/tests/**"
+        - "**/test/**"
+        - "**/testing/**"
+        - "**/docs/**"
+        - "**/doc/**"
+        - "**/examples/**"
+        - "**/example/**"
+        - "**/bench/**"
+        - "**/benchmark/**"
+        - "**/scripts/**"
+        - "**/tools/**"
+        - "**/vendor/**"
+        - "**/vendored/**"
+        - "**/.venv/**"
+        - "**/site-packages/**"
+    pattern-either:
+      - pattern: eval(input(...))
+      - pattern: exec(input(...))
+      - pattern: eval(request.$X.get(...))
+      - pattern: exec(request.$X.get(...))
+      - pattern: eval(request.$X[...])
+      - pattern: exec(request.$X[...])
+      - pattern: eval(os.environ[...])
+      - pattern: exec(os.environ[...])
+      - pattern: eval(os.getenv(...))
+      - pattern: exec(os.getenv(...))
+      - pattern: eval(sys.argv[...])
+      - pattern: exec(sys.argv[...])
+
+  - id: py.injection.shell-true.dynamic-command
+    languages: [python]
+    severity: ERROR
+    message: "shell=True с динамически собранной командой: высокий риск command injection."
+    metadata:
+      category: security
+      technology: [python]
+      cwe: ["CWE-78"]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+    paths:
+      exclude:
+        - "setup.py"
+        - "**/setup.py"
+        - "setup.cfg"
+        - "**/setup.cfg"
+        - "pyproject.toml"
+        - "**/pyproject.toml"
+        - "**/tests/**"
+        - "**/test/**"
+        - "**/testing/**"
+        - "**/docs/**"
+        - "**/doc/**"
+        - "**/examples/**"
+        - "**/example/**"
+        - "**/bench/**"
+        - "**/benchmark/**"
+        - "**/scripts/**"
+        - "**/tools/**"
+        - "**/vendor/**"
+        - "**/vendored/**"
+        - "**/.venv/**"
+        - "**/site-packages/**"
+    pattern-either:
+      - pattern: subprocess.run($CMD, shell=True, ...)
+        metavariable-regex:
+          metavariable: $CMD
+          regex: .*[+%].*|f["'].*\{.*\}.*["']
+      - pattern: subprocess.Popen($CMD, shell=True, ...)
+        metavariable-regex:
+          metavariable: $CMD
+          regex: .*[+%].*|f["'].*\{.*\}.*["']
+      - pattern: subprocess.call($CMD, shell=True, ...)
+        metavariable-regex:
+          metavariable: $CMD
+          regex: .*[+%].*|f["'].*\{.*\}.*["']
+      - pattern: subprocess.check_output($CMD, shell=True, ...)
+        metavariable-regex:
+          metavariable: $CMD
+          regex: .*[+%].*|f["'].*\{.*\}.*["']
+      - pattern: os.system($CMD)
+        metavariable-regex:
+          metavariable: $CMD
+          regex: .*[+%].*|f["'].*\{.*\}.*["']
+
+  - id: py.rce.pickle.untrusted-input
+    languages: [python]
+    severity: ERROR
+    message: "pickle.load или pickle.loads над явно внешними данными: риск RCE при недоверенном вводе."
+    metadata:
+      category: security
+      technology: [python]
+      cwe: ["CWE-502"]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+    paths:
+      exclude:
+        - "setup.py"
+        - "**/setup.py"
+        - "setup.cfg"
+        - "**/setup.cfg"
+        - "pyproject.toml"
+        - "**/pyproject.toml"
+        - "**/tests/**"
+        - "**/test/**"
+        - "**/testing/**"
+        - "**/docs/**"
+        - "**/doc/**"
+        - "**/examples/**"
+        - "**/example/**"
+        - "**/bench/**"
+        - "**/benchmark/**"
+        - "**/scripts/**"
+        - "**/tools/**"
+        - "**/vendor/**"
+        - "**/vendored/**"
+        - "**/.venv/**"
+        - "**/site-packages/**"
+    pattern-either:
+      - pattern: pickle.loads(request.$X.get(...))
+      - pattern: pickle.loads(request.$X[...])
+      - pattern: pickle.loads(base64.b64decode(request.$X.get(...)))
+      - pattern: pickle.loads(base64.b64decode(request.$X[...]))
+      - pattern: pickle.loads(sys.stdin.buffer.read(...))
+      - pattern: pickle.loads(sys.stdin.read(...))
+      - pattern: pickle.loads(socket.recv(...))
+      - pattern: pickle.loads(sock.recv(...))
+      - pattern: pickle.load(request.files[...])
+
+  - id: py.rce.yaml-load.unsafe-loader-untrusted-input
+    languages: [python]
+    severity: ERROR
+    message: "yaml.load с небезопасным Loader и внешними данными: риск небезопасной десериализации."
+    metadata:
+      category: security
+      technology: [python]
+      cwe: ["CWE-502"]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+    paths:
+      exclude:
+        - "setup.py"
+        - "**/setup.py"
+        - "setup.cfg"
+        - "**/setup.cfg"
+        - "pyproject.toml"
+        - "**/pyproject.toml"
+        - "**/tests/**"
+        - "**/test/**"
+        - "**/testing/**"
+        - "**/docs/**"
+        - "**/doc/**"
+        - "**/examples/**"
+        - "**/example/**"
+        - "**/bench/**"
+        - "**/benchmark/**"
+        - "**/scripts/**"
+        - "**/tools/**"
+        - "**/vendor/**"
+        - "**/vendored/**"
+        - "**/.venv/**"
+        - "**/site-packages/**"
+    pattern-either:
+      - pattern: yaml.load(request.$X.get(...), Loader=yaml.Loader, ...)
+      - pattern: yaml.load(request.$X.get(...), Loader=yaml.FullLoader, ...)
+      - pattern: yaml.load(request.$X[...], Loader=yaml.Loader, ...)
+      - pattern: yaml.load(request.$X[...], Loader=yaml.FullLoader, ...)
+      - pattern: yaml.load(os.getenv(...), Loader=yaml.Loader, ...)
+      - pattern: yaml.load(os.getenv(...), Loader=yaml.FullLoader, ...)
+      - pattern: yaml.load(sys.stdin.read(...), Loader=yaml.Loader, ...)
+      - pattern: yaml.load(sys.stdin.read(...), Loader=yaml.FullLoader, ...)
+
+  - id: py.tls.requests-verify-false.dynamic-url
+    languages: [python]
+    severity: WARNING
+    message: "requests с verify=False и динамическим URL: отключена проверка TLS сертификатов."
+    metadata:
+      category: security
+      technology: [python]
+      cwe: ["CWE-295"]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+    paths:
+      exclude:
+        - "setup.py"
+        - "**/setup.py"
+        - "setup.cfg"
+        - "**/setup.cfg"
+        - "pyproject.toml"
+        - "**/pyproject.toml"
+        - "**/tests/**"
+        - "**/test/**"
+        - "**/testing/**"
+        - "**/docs/**"
+        - "**/doc/**"
+        - "**/examples/**"
+        - "**/example/**"
+        - "**/bench/**"
+        - "**/benchmark/**"
+        - "**/scripts/**"
+        - "**/tools/**"
+        - "**/vendor/**"
+        - "**/vendored/**"
+        - "**/.venv/**"
+        - "**/site-packages/**"
+    pattern-either:
+      - pattern: requests.get($URL, verify=False, ...)
+        metavariable-regex:
+          metavariable: $URL
+          regex: ^(?!["']https?://[^"']+["']$).+
+      - pattern: requests.post($URL, verify=False, ...)
+        metavariable-regex:
+          metavariable: $URL
+          regex: ^(?!["']https?://[^"']+["']$).+
+      - pattern: requests.put($URL, verify=False, ...)
+        metavariable-regex:
+          metavariable: $URL
+          regex: ^(?!["']https?://[^"']+["']$).+
+      - pattern: requests.delete($URL, verify=False, ...)
+        metavariable-regex:
+          metavariable: $URL
+          regex: ^(?!["']https?://[^"']+["']$).+
+      - pattern: requests.request(..., $URL, ..., verify=False, ...)
+        metavariable-regex:
+          metavariable: $URL
+          regex: ^(?!["']https?://[^"']+["']$).+
+
+  - id: py.tls.ssl-unverified-context.runtime
+    languages: [python]
+    severity: ERROR
+    message: "ssl._create_unverified_context в runtime-коде: отключена проверка сертификатов."
+    metadata:
+      category: security
+      technology: [python]
+      cwe: ["CWE-295"]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+    paths:
+      exclude:
+        - "setup.py"
+        - "**/setup.py"
+        - "setup.cfg"
+        - "**/setup.cfg"
+        - "pyproject.toml"
+        - "**/pyproject.toml"
+        - "**/tests/**"
+        - "**/test/**"
+        - "**/testing/**"
+        - "**/docs/**"
+        - "**/doc/**"
+        - "**/examples/**"
+        - "**/example/**"
+        - "**/bench/**"
+        - "**/benchmark/**"
+        - "**/scripts/**"
+        - "**/tools/**"
+        - "**/vendor/**"
+        - "**/vendored/**"
+        - "**/.venv/**"
+        - "**/site-packages/**"
+    pattern: ssl._create_unverified_context(...)
